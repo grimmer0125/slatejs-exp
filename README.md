@@ -14,7 +14,7 @@ You can find the most recent version of this guide [here](https://github.com/fac
 
 **test**
 1. open two tabs
-2. move cursor and click somewhere in the content in the 1st table
+2. move cursor and click somewhere in the content in the 1st tab
 3. 2nd tab will show the cursor information of 1st tab (user)
 
 ## Production
