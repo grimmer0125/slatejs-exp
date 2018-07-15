@@ -21,6 +21,6 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "open": "open http://localhost:3000",
+    "open": "open http://localhost:3000"
   }
 }
