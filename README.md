@@ -20,3 +20,9 @@ You can find the most recent version of this guide [here](https://github.com/fac
 ## Production
 
 1.`yarn build`
+
+## Referecne & Similar projects about Collaborative editing
+
+1. https://github.com/pedrosanta/quill-sharedb-cursors
+2. https://en.wikipedia.org/wiki/Operational_transformation
+3. https://github.com/ianstormtaylor/slate/issues/259
