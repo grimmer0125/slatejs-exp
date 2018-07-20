@@ -128,7 +128,7 @@ class SyncingEditor extends React.Component {
         this.setState({ remoteSession: data.session })
 
         const remoteRange = Range.fromJSON(data.range)
-        this.updateMenu(remoteRange)
+        this.updateHover(remoteRange)
       }
     })
   }
@@ -148,13 +148,12 @@ class SyncingEditor extends React.Component {
   /**
    * On update, update the menu.
    */
-
   componentDidMount = () => {
-    this.updateMenu()
+    // this.updateHover()
   }
 
   componentDidUpdate = () => {
-    this.updateMenu()
+    // this.updateHover()
   }
 
   broadcastCursorRange = range => {
@@ -169,20 +168,27 @@ class SyncingEditor extends React.Component {
     }
   }
 
-  updateMenu = remoteRange => {
-    const { value } = this.state
-    const menu = this.menu
+  // 共以下方法得到 cursor(caret)/selection range, 使用 slatejs時
+  // 1. wrapper UI-didUpdate + native range/slate range
+  // 2. onChange + native range (但此時 slate 還沒focus, 所以取slate range應該會有問題, 要一直用native range)
+  // 2. onChange                                + slate range + setTimeout裡get slate range
+  // 4. onFocus(主要是unfocus case) + onSelect + + slate range + setTimeout
+  updateHover = remoteRange => {
+    console.log("update hover start");
 
-    if (!menu) {
+    const { value } = this.state
+    const hover = this.hover
+    if (!hover) {
       return
     }
-
-    // console.log('value:', value)
-
-    if (!value.isFocused && !remoteRange) {
-      // menu.removeAttribute('style')
-      // console.log('not show')
-      return
+    if (!value.isFocused) {
+      console.log("not focus in updateHover")
+      if (!remoteRange) {
+        console.log("no menu changed from remote")
+        // TODO: hide this hover cursor everywhere
+        // menu.removeAttribute('style')
+        return
+      }
     }
 
     let slateRange
@@ -195,10 +201,10 @@ class SyncingEditor extends React.Component {
 
       const rect = range.getBoundingClientRect()
       console.log('rect:', rect)
-      menu.style.opacity = 1
-      menu.style.top = `${rect.top + window.pageYOffset - menu.offsetHeight}px`
+      hover.style.opacity = 1
+      hover.style.top = `${rect.top + window.pageYOffset - hover.offsetHeight}px`
 
-      menu.style.left = `${rect.left + window.pageXOffset}px`
+      hover.style.left = `${rect.left + window.pageXOffset}px`
       // menu.style.left = `${rect.left +
       //   window.pageXOffset -
       //   menu.offsetWidth / 2 +
@@ -217,6 +223,8 @@ class SyncingEditor extends React.Component {
 
       this.broadcastCursorRange(slateRange.toJSON())
     }
+    console.log("update hover end");
+
   }
 
   /**
@@ -235,15 +243,16 @@ class SyncingEditor extends React.Component {
           {this.renderMarkButton('code', 'code')}
         </Toolbar>
         <HoverCursor
-          innerRef={menu => (this.menu = menu)}
+          innerRef={hover => (this.hover = hover)}
           value={this.state.value}
-          onChange={this.onChange}
           name={this.state.remoteSession}
         />
         <Editor
           placeholder="Enter some text..."
           value={this.state.value}
           onChange={this.onChange}
+          onFocus={this.onFocus}
+          onSelect={this.onSelect}
           onKeyDown={this.onKeyDown}
           renderMark={this.renderMark}
           spellCheck
@@ -293,6 +302,13 @@ class SyncingEditor extends React.Component {
     }
   }
 
+  onFocus =  (change, options = {}) => {
+    // triggered sequences:
+    // onFocus -> onSelect (will not be triggered when unfocus)
+    // -> onChange -> didUpdate
+    console.log('onFocus event!!')
+  }
+
   /**
    * On change, save the new `value`. And if it's a local change, call the
    * passed-in `onChange` handler.
@@ -300,16 +316,23 @@ class SyncingEditor extends React.Component {
    * @param {Change} change
    * @param {Object} options
    */
-
   onChange = (change, options = {}) => {
     console.log('onchange!!')
+
     this.setState({ value: change.value })
 
     if (!options.remote) {
       console.log('onchange, active, notify remote to change!!')
-
       // this.props.onChange(change)
     }
+
+    setTimeout(()=>{
+      this.updateHover();
+    }, 0);
+  }
+
+  onSelect = (change, options = {}) => {
+    console.log('onSelect!!')
   }
 
   /**
@@ -321,6 +344,8 @@ class SyncingEditor extends React.Component {
    */
 
   onKeyDown = (event, change) => {
+    console.log('onKeyDown:', event.which, event.metaKey, event.altKey)
+
     let mark
 
     if (isBoldHotkey(event)) {
