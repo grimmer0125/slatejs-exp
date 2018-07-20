@@ -168,15 +168,20 @@ class SyncingEditor extends React.Component {
     }
   }
 
-  // 共以下方法得到 cursor(caret)/selection range, 使用 slatejs時
-  // 1. wrapper UI-didUpdate + native range/slate range
-  // 2. onChange + native range (但此時 slate 還沒focus, 所以取slate range應該會有問題, 要一直用native range)
-  // 2. onChange                                + slate range + setTimeout裡get slate range
-  // 4. onFocus(主要是unfocus case) + onSelect + + slate range + setTimeout
-  updateHover = remoteRange => {
+  // There are some ways to get cursor(caret)/selection range
+  // 1. wrapper UI-didUpdate                 + native range/slate range
+  // 2. onChange                             + native range/slate range
+  // 3. onFocus(mainly unfocus case) + onSelect + native range/slate range
+  updateHover = (remoteRange, newValue) => {
     console.log("update hover start");
 
-    const { value } = this.state
+    let value
+    if (newValue) {
+      value = newValue
+    } else {
+      value = this.state.value;
+    }
+
     const hover = this.hover
     if (!hover) {
       return
@@ -217,8 +222,8 @@ class SyncingEditor extends React.Component {
       console.log('native range:', nativeRange)
 
       slateRange = findRange(nativeRange, value)
-      const jsonStr = slateRange.toJSON()
-      slateRange = Range.fromJSON(jsonStr)
+      // const jsonStr = slateRange.toJSON()
+      // slateRange = Range.fromJSON(jsonStr)
       console.log('slate range:', slateRange)
 
       this.broadcastCursorRange(slateRange.toJSON())
@@ -321,14 +326,10 @@ class SyncingEditor extends React.Component {
 
     this.setState({ value: change.value })
 
-    if (!options.remote) {
-      console.log('onchange, active, notify remote to change!!')
-      // this.props.onChange(change)
-    }
-
-    setTimeout(()=>{
-      this.updateHover();
-    }, 0);
+    // setTimeout(()=>{
+    console.log('onchange, active, notify remote to change!!')
+    this.updateHover(null, change.value);
+    // }, 0);
   }
 
   onSelect = (change, options = {}) => {
