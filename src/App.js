@@ -217,11 +217,12 @@ class SyncingEditor extends React.Component {
     } else {
       console.log('local changes cursor')
 
-      const selection = window.getSelection()
-      const nativeRange = selection.getRangeAt(0)
-      console.log('native range:', nativeRange)
+      // const selection = window.getSelection()
+      // const nativeRange = selection.getRangeAt(0)
+      // console.log('native range:', nativeRange)
+      // console.log("value:", value);
 
-      slateRange = findRange(nativeRange, value)
+      slateRange = value.selection;//findRange(nativeRange, value)
       // const jsonStr = slateRange.toJSON()
       // slateRange = Range.fromJSON(jsonStr)
       console.log('slate range:', slateRange)
