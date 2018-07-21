@@ -250,7 +250,6 @@ class SyncingEditor extends React.Component {
         </Toolbar>
         <HoverCursor
           innerRef={hover => (this.hover = hover)}
-          value={this.state.value}
           name={this.state.remoteSession}
         />
         <Editor
