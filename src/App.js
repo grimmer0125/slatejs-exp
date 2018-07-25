@@ -25,7 +25,7 @@ const StyledMenu = styled(Menu)`
   top: -10000px;
   left: -10000px;
   margin-top: -6px;
-  opacity: 0;
+  opacity: 1;
   background-color: #222;
   border-radius: 4px;
   transition: opacity 0.75s;
@@ -59,7 +59,7 @@ class HoverCursor extends React.Component {
     const root = window.document.getElementById('root')
 
     return ReactDOM.createPortal(
-      <StyledMenu className={className} innerRef={innerRef}>
+      <StyledMenu innerRef={innerRef}>
         <div style={{ color: 'white' }}>{this.props.name}</div>
         {/* {this.renderMarkButton('bold', 'format_bold')}
         {this.renderMarkButton('italic', 'format_italic')}
@@ -126,8 +126,9 @@ class SyncingEditor extends React.Component {
 
       if (data.action === 'update') {
         this.setState({ remoteSession: data.session })
-
         const remoteRange = Range.fromJSON(data.range)
+        // console.log("remote raw range:",data.range);
+        // console.log('remote range:', remoteRange);
         this.updateHover(remoteRange)
       }
     })
@@ -178,6 +179,8 @@ class SyncingEditor extends React.Component {
     let value
     if (newValue) {
       value = newValue
+      // console.log('new value:', newValue.toJS());
+      // console.log('current value:', this.state.value.toJS());
     } else {
       value = this.state.value;
     }
@@ -206,7 +209,7 @@ class SyncingEditor extends React.Component {
 
       const rect = range.getBoundingClientRect()
       console.log('rect:', rect)
-      hover.style.opacity = 1
+      // hover.style.opacity = 1
       hover.style.top = `${rect.top + window.pageYOffset - hover.offsetHeight}px`
 
       hover.style.left = `${rect.left + window.pageXOffset}px`
@@ -219,13 +222,32 @@ class SyncingEditor extends React.Component {
 
       // const selection = window.getSelection()
       // const nativeRange = selection.getRangeAt(0)
-      // console.log('native range:', nativeRange)
+      // console.log('!! native range:', nativeRange)
       // console.log("value:", value);
+      // let startNode = nativeRange.startContainer;
+      // 找 data-slate-editor="true"
+      //const rootNode = document.body.firstElementChild;
+      // const rootNode = document.getElementById('root')
+      // console.log("nodes:", rootNode.childNodes);
+      // console.log("count:", rootNode.childNodes.length);
+
+      // use previousSibling + childNodes,
+      // not previousElementSibling + children
+      // const indexList1 = this.getDomIndexHierarchy(nativeRange.startContainer)
+      // const indexList2 = this.getDomIndexHierarchy(nativeRange.endContainer)
+      // const range2 = document.createRange();
+      // range2.setStart(this.getNodeFromHierarchy(indexList1), nativeRange.startOffset);
+      // range2.setEnd(this.getNodeFromHierarchy(indexList2), nativeRange.endOffset);
+      // console.log('rect0:', range2.getBoundingClientRect())
+
 
       slateRange = value.selection;//findRange(nativeRange, value)
       // const jsonStr = slateRange.toJSON()
       // slateRange = Range.fromJSON(jsonStr)
-      console.log('slate range:', slateRange)
+      console.log('!! slate range:', slateRange)
+      // const domRange = findDOMRange(slateRange)
+      // const rect = domRange.getBoundingClientRect()
+      // console.log('rect:', rect)
 
       this.broadcastCursorRange(slateRange.toJSON())
     }
@@ -307,11 +329,11 @@ class SyncingEditor extends React.Component {
     }
   }
 
-  onFocus =  (change, options = {}) => {
+  onFocus =  (event, change) => {
     // triggered sequences:
     // onFocus -> onSelect (will not be triggered when unfocus)
     // -> onChange -> didUpdate
-    console.log('onFocus event!!')
+    console.log('onFocus event!!:', change.value)
   }
 
   /**
@@ -322,18 +344,38 @@ class SyncingEditor extends React.Component {
    * @param {Object} options
    */
   onChange = (change, options = {}) => {
-    console.log('onchange!!')
+    console.log('onchange!!:', change.value)
+
+    const mark = 'bold'
+    if (!change.value.isCollapsed) {
+      console.log('try to auto set bold mark when selecting')
+      change.toggleMark({
+        data: {name:"gg"},
+        type: mark,
+      })
+    }
 
     this.setState({ value: change.value })
 
-    // setTimeout(()=>{
     console.log('onchange, active, notify remote to change!!')
+
     this.updateHover(null, change.value);
-    // }, 0);
+
+    // insert_text, set_selecion
+    const operations = change.operations
+    console.log('operations:', operations.toJS());
+    const ops = operations
+    .filter(o => o.type && o.type === 'set_selection')
+    .toJS()
+    if (ops.length > 0) {
+      console.log('ops>0');
+    } else {
+      console.log('ops ==0');
+    }
   }
 
-  onSelect = (change, options = {}) => {
-    console.log('onSelect!!')
+  onSelect = (event, change) => {
+    console.log('onSelect!!:', change.value)
   }
 
   /**
@@ -343,10 +385,8 @@ class SyncingEditor extends React.Component {
    * @param {Change} change
    * @return {Change}
    */
-
   onKeyDown = (event, change) => {
     console.log('onKeyDown:', event.which, event.metaKey, event.altKey)
-
     let mark
 
     if (isBoldHotkey(event)) {
